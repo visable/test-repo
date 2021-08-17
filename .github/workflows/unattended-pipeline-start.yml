@@ -1,0 +1,24 @@
+name: Unattended - Pipeline Start
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  set-workflows-running-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekodour/gh-actions-custom-status@v0.0.4
+        name: Set Workflows Running Lock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAST_COMMIT_SHA: ${{ github.sha }}
+        with:
+          args: >-
+            --state=pending
+            --context=workflows-pending-to-run
+            --target_url=https://github.com/${{ github.repository }}/actions

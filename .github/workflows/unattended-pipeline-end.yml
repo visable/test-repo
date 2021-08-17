@@ -1,0 +1,40 @@
+name: Unattended - Pipeline End
+
+on:
+  workflow_run:
+    workflows: ["Unattended - Deploy"]
+    types: [completed]
+
+jobs:
+  clear-workflows-running-lock:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Initialization
+        id: check_init
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Clear Workflows Running Lock
+          status: in_progress
+          sha: ${{ github.event.workflow_run.head_sha }}
+      - uses: geekodour/gh-actions-custom-status@v0.0.4
+        name: Clear Workflows Running Lock
+        id: clear_lock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAST_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          args: >-
+            --state=success
+            --context=workflows-pending-to-run
+            --target_url=https://github.com/${{ github.repository }}/actions
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Completion
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          check_id: ${{ steps.check_init.outputs.check_id }}
+          status: completed
+          output: |
+            {"summary":"Status workflows-pending-to-run set to success"}
+          conclusion: ${{ steps.clear_lock.conclusion }}

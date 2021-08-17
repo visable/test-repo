@@ -1,0 +1,63 @@
+name: Unattended - Deploy
+
+on:
+  workflow_run:
+    workflows: ["Unattended - Docker Build"]
+    types: [completed]
+
+jobs:
+  sentry_release_build:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' && github.event.repository.default_branch == github.event.workflow_run.head_branch
+    steps:
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Initialization
+        id: check_init
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Sentry Release Build
+          status: in_progress
+          sha: ${{ github.event.workflow_run.head_sha }}
+      - run: echo "Unattended - Deploy Sentry"
+        id: sentry_release
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Completion
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          check_id: ${{ steps.check_init.outputs.check_id }}
+          status: completed
+          output: |
+            {"summary":"Check Run set to Done"}
+          conclusion: ${{ steps.sentry_release.conclusion }}
+  test:
+    runs-on: ubuntu-latest
+    if: github.event.repository.default_branch == github.event.workflow_run.head_branch
+    steps:
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Initialization
+        id: check_init
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Sentry Release Build
+          status: in_progress
+          sha: ${{ github.event.workflow_run.head_sha }}
+      - run: echo "Unattended - Deploy Sentry"
+        id: sentry_release
+      - run: echo "github.event.workflow_run= ${{ github.event.workflow_run }}"
+      - run: echo "github.ref= ${{ github.ref }}"
+      - run: echo "default_branch= ${{ github.event.repository.default_branch }}"
+        if: github.event.repository.default_branch == 'master'
+      - run: echo "head_branch= ${{ github.event.workflow_run.head_branch }}"
+        if: github.event.repository.default_branch != 'master'
+      - run: echo "head_branch= ${{ github.event.workflow_run.head_branch }}"
+        if: github.event.repository.default_branch == github.event.workflow_run.head_branch
+        id: test
+      - uses: LouisBrunner/checks-action@v1.1.1
+        name: Check Runs Completion
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          check_id: ${{ steps.check_init.outputs.check_id }}
+          status: completed
+          output: |
+            {"summary":"Check Run set to Done"}
+          conclusion: ${{ steps.sentry_release.conclusion }}
